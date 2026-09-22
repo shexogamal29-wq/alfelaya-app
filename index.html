@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title> آل فليه  للاستثمار العقارى</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col pb-8">
+
+  <!-- ================= 1. شاشة تسجيل الدخول ================= -->
+  <div id="loginScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-sm w-full p-6 rounded-2xl border border-slate-200 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg mx-auto shadow-sm">R</div>
+        <h2 class="font-bold text-slate-900 text-base">تسجيل الدخول للمنظومة</h2>
+        <p class="text-xs text-slate-500">حماية، تحكم بالطرح، وإدارة المبيعات</p>
+      </div>
+      <div class="space-y-3 text-xs pt-1">
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">اسم المستخدم</label>
+          <input type="text" id="loginUser" placeholder="admin أو super1 أو sales1" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">كلمة المرور</label>
+          <input type="password" id="loginPass" placeholder="123" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none">
+        </div>
+      </div>
+      <button onclick="performLogin()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm transition">دخول</button>
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] text-slate-500 space-y-1">
+        <div>🔑 <b>مدير:</b> admin / 123</div>
+        <div>🛡️ <b>مشرف:</b> super1 / 123</div>
+        <div>💼 <b>سيلز:</b> sales1 / 123</div>
+      </div>
+      <p id="loginError" class="text-center text-xs text-rose-600 font-semibold"></p>
+    </div>
+  </div>
+
+  <!-- ================= 2. الشريط العلوي ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm">R</div>
+      <div>
+        <h1 class="font-bold text-sm sm:text-base text-slate-900 leading-none">آل فليه للاستثمار العقارى</h1>
+        <span class="text-[10px] text-slate-500 inline-flex items-center gap-1 mt-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          مهلة الحجز القياسية: <b id="headerHoldHoursBadge" class="text-slate-800">48 ساعة</b>
+        </span>
+      </div>
+    </div>
+
+    <!-- أزرار الإدارة والتقارير -->
+    <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+      <!-- استيراد إكسيل -->
+      <button id="importExcelBtn" onclick="openImportModal()" class="hidden items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold">
+        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+        <span>استيراد إكسيل</span>
+      </button>
+
+      <!-- تقارير إكسيل -->
+      <div id="reportsDropdown" class="hidden relative group">
+        <button class="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>تقارير إكسيل</span>
+        </button>
+        <div class="absolute left-0 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg hidden group-hover:block z-40 p-1 text-xs">
+          <button onclick="downloadReport('sold')" class="w-full text-right px-3 py-2 hover:bg-slate-50 rounded-lg block font-medium text-slate-700">📊 تقرير المباع</button>
+          <button onclick="downloadReport('available')" class="w-full text-right px-3 py-2 hover:bg-slate-50 rounded-lg block font-medium text-emerald-700">🟢 تقرير المتاح</button>
+          <button onclick="downloadReport('hold')" class="w-full text-right px-3 py-2 hover:bg-slate-50 rounded-lg block font-medium text-amber-700">⏳ تقرير المحجوز</button>
+        </div>
+      </div>
+
+      <!-- حجب وغلق الطرح -->
+      <button id="blockModalBtn" onclick="openBlockModal()" class="hidden items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+        <span>حجب الطرح</span>
+      </button>
+
+      <!-- إضافة وحدة يدوية -->
+      <button id="addUnitBtn" onclick="openAddUnitModal()" class="hidden items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1.5 rounded-lg text-xs font-medium">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>إضافة وحدة</span>
+      </button>
+
+      <!-- سجل الموظفين والإعدادات -->
+      <button id="usersBtn" onclick="openUsersModal()" class="hidden items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold" title="سجل الموظفين وإعدادات الوقت">
+        <i data-lucide="users" class="w-3.5 h-3.5"></i>
+        <span>الموظفين والإعدادات</span>
+      </button>
+
+      <button id="logsBtn" onclick="openLogsModal()" class="hidden items-center p-1.5 bg-slate-100 text-slate-700 border rounded-lg text-xs" title="السجل">
+        <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
+      </button>
+
+      <div class="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg border text-xs">
+        <span id="currentUserName" class="font-bold text-slate-800 truncate max-w-[85px]">-</span>
+        <span id="currentUserRole" class="text-[9px] px-1 py-0.5 rounded font-bold bg-slate-200">-</span>
+      </div>
+
+      <button onclick="logout()" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+    </div>
+  </header>
+
+  <!-- ================= المحتوى الرئيسي ================= -->
+  <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 space-y-4 flex-1">
+    <!-- المؤشرات -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        <span class="text-[11px] font-medium text-slate-500 block">إجمالي الوحدات</span>
+        <div id="kpiTotal" class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">0</div>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        <span class="text-[11px] font-medium text-emerald-600 block">المتاح للبيع</span>
+        <div id="kpiAvailable" class="text-xl sm:text-2xl font-bold text-emerald-600 mt-0.5">0</div>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        <span class="text-[11px] font-medium text-amber-600 block">محجوز (Hold)</span>
+        <div id="kpiHold" class="text-xl sm:text-2xl font-bold text-amber-600 mt-0.5">0</div>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        <span class="text-[11px] font-medium text-slate-400 block">مُباع ومغلق</span>
+        <div id="kpiSold" class="text-xl sm:text-2xl font-bold text-slate-500 mt-0.5">0</div>
+      </div>
+    </div>
+
+    <!-- الفلاتر المتطورة -->
+    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+        <span class="text-slate-400 font-semibold pl-2">التصنيف:</span>
+        <button onclick="setCategoryFilter('all')" class="cat-btn bg-slate-900 text-white px-3 py-1 rounded-lg">الكل</button>
+        <button onclick="setCategoryFilter('سكني')" class="cat-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg">🏠 سكني</button>
+        <button onclick="setCategoryFilter('تجاري')" class="cat-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg">🛍️ تجاري</button>
+        <button onclick="setCategoryFilter('إداري')" class="cat-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg">🏢 إداري</button>
+        <button onclick="setCategoryFilter('طبي')" class="cat-btn bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg">🏥 طبي</button>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1 border-t border-slate-100">
+        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="بحث بكود الوحدة (1101)، رقم البرج أو الدور..." class="w-full sm:w-80 bg-slate-50 border rounded-xl px-3 py-2 text-xs">
+        
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-xl border">
+            <span>المساحة:</span>
+            <input type="number" id="minArea" oninput="applyFilters()" placeholder="من" class="w-12 bg-white border rounded px-1 text-center text-xs">
+            <span>-</span>
+            <input type="number" id="maxArea" oninput="applyFilters()" placeholder="إلى" class="w-12 bg-white border rounded px-1 text-center text-xs">
+          </div>
+          <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-slate-800 px-3 py-1.5 bg-slate-100 rounded-xl">إعادة ضبط</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- شبكة العمارات والوحدات -->
+    <div class="space-y-4" id="buildingsWrapper"></div>
+  </main>
+
+  <!-- ================= نافذة سجل الموظفين وإعدادات وقت الحجز ================= -->
+  <div id="usersModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-3 sm:p-4">
+    <div class="bg-white max-w-2xl w-full p-5 rounded-2xl border shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
+          سجل الموظفين وإعدادات مهلة الحجز
+        </h3>
+        <button onclick="closeUsersModal()" class="text-slate-400 hover:text-slate-700 text-base">✕</button>
+      </div>
+
+      <!-- إعداد مدة الحجز الافتراضية للمدير -->
+      <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div>
+          <span class="font-bold text-indigo-900 block">مدة الحجز الافتراضية للوحدات:</span>
+          <span class="text-indigo-700 text-[11px]">تطبق تلقائياً عند قيام أي سيلز بحجز وحدة</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="settingHoldHours" class="bg-white border border-indigo-200 rounded-lg p-1.5 font-bold text-indigo-900 text-xs">
+            <option value="24">24 ساعة (يوم)</option>
+            <option value="48" selected>48 ساعة (يومان - قياسي)</option>
+            <option value="72">72 ساعة (3 أيام)</option>
+            <option value="96">96 ساعة (4 أيام)</option>
+          </select>
+          <button onclick="saveHoldDurationSetting()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg transition">تطبيق</button>
+        </div>
+      </div>
+
+      <!-- نموذج إضافة موظف جديد -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <span class="text-xs font-bold text-slate-700 block">إضافة حساب موظف جديد:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+          <input type="text" id="newUserFull" placeholder="الاسم بالكامل" class="bg-white border rounded-lg p-2">
+          <input type="text" id="newUserName" placeholder="اسم الدخول" class="bg-white border rounded-lg p-2">
+          <input type="password" id="newUserPass" placeholder="كلمة المرور" class="bg-white border rounded-lg p-2">
+          <select id="newUserRole" class="bg-white border rounded-lg p-2 font-semibold">
+            <option value="sales">سيلز (حجز فقط)</option>
+            <option value="supervisor">مشرف (تمديد وإلغاء)</option>
+            <option value="manager">مدير (صلاحيات كاملة)</option>
+          </select>
+        </div>
+        <button onclick="addUserSubmit()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 rounded-lg text-xs transition">حفظ حساب الموظف</button>
+      </div>
+
+      <!-- جدول الموظفين -->
+      <div class="overflow-x-auto flex-1 border rounded-xl">
+        <table class="w-full text-right text-xs min-w-[420px]">
+          <thead class="bg-slate-50 border-b text-slate-600 sticky top-0">
+            <tr>
+              <th class="p-2.5">الاسم</th>
+              <th class="p-2.5">اسم الدخول</th>
+              <th class="p-2.5">الرتبة</th>
+              <th class="p-2.5 text-center">إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= نافذة الخصم وتأكيد البيع ================= -->
+  <div id="soldDiscountModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-sm w-full p-5 rounded-2xl border shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800">اعتماد البيع وتطبيق الخصم (<span id="soldModalCode">-</span>)</h3>
+        <button onclick="closeSoldModal()" class="text-slate-400">✕</button>
+      </div>
+      <div class="text-xs space-y-3">
+        <div>
+          <span class="text-slate-500 block">السعر الأساسي:</span>
+          <span id="soldBasePrice" class="font-bold text-base text-slate-900 font-mono">0 ج.م</span>
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">قيمة الخصم المعتمد (ج.م):</label>
+          <input type="number" id="discountInput" oninput="calcFinalPrice()" value="0" placeholder="0" class="w-full bg-slate-50 border rounded-xl p-2.5 font-mono text-sm focus:outline-none">
+        </div>
+        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+          <span class="text-emerald-700 text-xs block font-medium">السعر النهائي بعد الخصم:</span>
+          <span id="soldFinalPrice" class="font-bold text-base text-emerald-800 font-mono">0 ج.م</span>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeSoldModal()" class="px-3 py-2 text-xs text-slate-600 rounded-xl">إلغاء</button>
+        <button onclick="confirmSoldWithDiscount()" class="px-4 py-2 text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium">تأكيد البيع النهائي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= نافذة الحجب والغلق الذكي ================= -->
+  <div id="blockModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-sm w-full p-5 rounded-2xl border shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i>
+          التحكم في طرح وحجب الوحدات
+        </h3>
+        <button onclick="closeBlockModal()" class="text-slate-400">✕</button>
+      </div>
+      <div class="text-xs space-y-3">
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">نطاق الغلق/الفتح:</label>
+          <select id="blockScope" onchange="toggleBlockScopeInputs()" class="w-full bg-slate-50 border rounded-xl p-2.5">
+            <option value="building">برج / عمارة كاملة</option>
+            <option value="floor">دور محدد داخل عمارة</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">رقم أو اسم البرج:</label>
+          <input type="text" id="blockBuilding" placeholder="مثال: 1" class="w-full bg-slate-50 border rounded-xl p-2">
+        </div>
+        <div id="blockFloorWrapper" class="hidden">
+          <label class="font-semibold text-slate-700 block mb-1">رقم الدور المطلوب حجبه:</label>
+          <input type="number" id="blockFloor" placeholder="مثال: 3" class="w-full bg-slate-50 border rounded-xl p-2">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">الإجراء المطلوب:</label>
+          <select id="blockAction" class="w-full bg-slate-50 border rounded-xl p-2.5">
+            <option value="hide_sales">حجب وغلق عن السيلز فقط</option>
+            <option value="hide_all">حجب وغلق عن (السيلز والمشرف معاً)</option>
+            <option value="unblock">إلغاء الغلق وإتاحة الطرح للجميع</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeBlockModal()" class="px-3 py-2 text-xs text-slate-600">إلغاء</button>
+        <button onclick="executeBlockVisibility()" class="px-4 py-2 text-xs bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-medium">تنفيذ الإجراء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= نافذة استيراد الإكسيل ================= -->
+  <div id="importModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-sm w-full p-5 rounded-2xl border shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800">استيراد وحدات من ملف إكسيل</h3>
+        <button onclick="closeImportModal()" class="text-slate-400">✕</button>
+      </div>
+      <div class="text-xs space-y-2">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+          <span class="font-bold text-slate-800 block mb-1">ترتيب الأعمدة المطلوب:</span>
+          [رقم البرج | الدور | الشقة | التصنيف | المساحة | سعر المتر]<br>
+          <span class="text-emerald-700 font-bold block mt-1">⚡ يتم حساب إجمالي السعر تلقائياً وتوليد الكود الذكي (1101).</span>
+        </div>
+        <input type="file" id="excelFileInput" accept=".xlsx,.csv" class="w-full border p-2 rounded-xl text-xs bg-slate-50">
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeImportModal()" class="px-3 py-2 text-xs text-slate-600">إلغاء</button>
+        <button onclick="uploadExcelFile()" class="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium">بدء الاستيراد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= نافذة إضافة وحدة يدوية ================= -->
+  <div id="addUnitModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-md w-full p-5 rounded-2xl border shadow-xl space-y-3">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800">إضافة وحدة عقارية جديدة</h3>
+        <button onclick="closeAddUnitModal()" class="text-slate-400">✕</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div>
+          <label class="font-semibold block mb-1">رقم/اسم البرج</label>
+          <input type="text" id="manualBuilding" placeholder="مثال: 1" class="w-full border p-2 rounded-xl bg-slate-50">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">التصنيف</label>
+          <select id="manualCategory" class="w-full border p-2 rounded-xl bg-slate-50 font-semibold">
+            <option value="سكني">سكني</option>
+            <option value="تجاري">تجاري</option>
+            <option value="إداري">إداري</option>
+            <option value="طبي">طبي</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">رقم الدور</label>
+          <input type="number" id="manualFloor" placeholder="1" class="w-full border p-2 rounded-xl bg-slate-50">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">رقم الشقة في الدور</label>
+          <input type="number" id="manualUnitNum" placeholder="1" class="w-full border p-2 rounded-xl bg-slate-50">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">المساحة (م²)</label>
+          <input type="number" id="manualArea" placeholder="150" class="w-full border p-2 rounded-xl bg-slate-50">
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">سعر المتر (ج.م)</label>
+          <input type="number" id="manualMeterPrice" placeholder="25000" class="w-full border p-2 rounded-xl bg-slate-50">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeAddUnitModal()" class="px-3 py-2 text-xs text-slate-600">إلغاء</button>
+        <button onclick="saveManualUnit()" class="px-4 py-2 text-xs bg-slate-900 text-white rounded-xl font-medium">حفظ الوحدة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Modal: تمديد الحجز ================= -->
+  <div id="extendModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white max-w-sm w-full p-5 rounded-2xl border space-y-4">
+      <div class="flex justify-between border-b pb-2">
+        <h3 class="font-bold text-sm">تمديد مهلة الحجز</h3>
+        <button onclick="closeExtendModal()">✕</button>
+      </div>
+      <div class="text-xs space-y-2">
+        <label class="block font-semibold">إضافة ساعات:</label>
+        <select id="extendHoursSelect" class="w-full border p-2 rounded-xl bg-slate-50">
+          <option value="24">24 ساعة (يوم إضافي)</option>
+          <option value="48">48 ساعة (يومان)</option>
+          <option value="72">72 ساعة (3 أيام)</option>
+        </select>
+      </div>
+      <div class="flex justify-end gap-2 border-t pt-2">
+        <button onclick="closeExtendModal()" class="px-3 py-1.5 text-xs">إلغاء</button>
+        <button onclick="confirmExtendAction()" class="px-4 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-medium">تأكيد التمديد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Modal: سجل العمليات Logs ================= -->
+  <div id="logsModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-3 sm:p-4">
+    <div class="bg-white max-w-3xl w-full p-5 rounded-2xl border space-y-3 max-h-[85vh] flex flex-col">
+      <div class="flex justify-between border-b pb-2">
+        <h3 class="font-bold text-sm">سجل العمليات والرقابة (Audit Trail)</h3>
+        <button onclick="closeLogsModal()">✕</button>
+      </div>
+      <div class="overflow-x-auto flex-1 border rounded-xl">
+        <table class="w-full text-right text-xs min-w-[500px]">
+          <thead class="bg-slate-50 border-b">
+            <tr><th class="p-2">التوقيت</th><th class="p-2">الموظف</th><th class="p-2">الحركة</th><th class="p-2">الوحدة</th><th class="p-2">التفاصيل</th></tr>
+          </thead>
+          <tbody id="logsTableBody" class="divide-y font-mono text-[11px]"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    let currentUser = null;
+    let deviceToken = localStorage.getItem('device_token') || ('DEV-' + Math.random().toString(36).substring(2, 9).toUpperCase());
+    localStorage.setItem('device_token', deviceToken);
+
+    let allUnits = [];
+    let activeCategory = 'all';
+    let currentSystemHoldHours = 48;
+    let ws;
+    let selectedUnitForSold = null;
+    let selectedUnitIdForExtend = null;
+
+    // --- نظام الخروج التلقائي عند السكون (دقيقتين) ---
+    let inactivityTimer;
+    const INACTIVITY_LIMIT_MS = 2 * 60 * 1000; // 2 دقائق
+
+    function resetInactivityTimer() {
+      if (!currentUser) return;
+      localStorage.setItem('last_active_time', Date.now().toString());
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        triggerAutoLogout();
+      }, INACTIVITY_LIMIT_MS);
+    }
+
+    function triggerAutoLogout() {
+      if (!currentUser) return;
+      alert('تم تسجيل الخروج تلقائياً لدواعي الأمان بسبب عدم وجود نشاط لمدة دقيقتين.');
+      logout();
+    }
+
+    function setupActivityListeners() {
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+      events.forEach(ev => {
+        window.addEventListener(ev, resetInactivityTimer, { passive: true });
+      });
+    }
+
+    function checkAuth() {
+      const session = localStorage.getItem('user_session');
+      const lastActive = localStorage.getItem('last_active_time');
+
+      if (session) {
+        // التحقق من مدة السكون السابقة
+        if (lastActive && (Date.now() - parseInt(lastActive)) > INACTIVITY_LIMIT_MS) {
+          logout();
+          return;
+        }
+
+        currentUser = JSON.parse(session);
+        document.getElementById('loginScreen').classList.replace('flex', 'hidden');
+        setupDashboard();
+        resetInactivityTimer();
+        setupActivityListeners();
+      } else {
+        document.getElementById('loginScreen').classList.replace('hidden', 'flex');
+      }
+    }
+
+    async function performLogin() {
+      const u = document.getElementById('loginUser').value.trim();
+      const p = document.getElementById('loginPass').value.trim();
+      const err = document.getElementById('loginError');
+      err.innerText = '';
+      if (!u || !p) return err.innerText = 'يرجى إدخال اسم المستخدم وكلمة المرور';
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ username: u, password: p, device_token: deviceToken, device_name: 'جهاز ' + u })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentUser = data.user;
+          localStorage.setItem('user_session', JSON.stringify(currentUser));
+          localStorage.setItem('last_active_time', Date.now().toString());
+          document.getElementById('loginScreen').classList.replace('flex', 'hidden');
+          setupDashboard();
+          resetInactivityTimer();
+          setupActivityListeners();
+        } else {
+          err.innerText = data.detail || 'خطأ في بيانات الدخول';
+        }
+      } catch (e) {
+        err.innerText = 'فشل الاتصال بالسيرفر';
+      }
+    }
+
+    async function setupDashboard() {
+      document.getElementById('currentUserName').innerText = currentUser.full_name;
+      const roleArabic = { 'manager': 'مدير', 'supervisor': 'مشرف', 'sales': 'سيلز' }[currentUser.role] || currentUser.role;
+      document.getElementById('currentUserRole').innerText = roleArabic;
+
+      if (currentUser.role === 'manager') {
+        document.getElementById('importExcelBtn').classList.replace('hidden', 'flex');
+        document.getElementById('reportsDropdown').classList.replace('hidden', 'block');
+        document.getElementById('blockModalBtn').classList.replace('hidden', 'flex');
+        document.getElementById('addUnitBtn').classList.replace('hidden', 'flex');
+        document.getElementById('usersBtn').classList.replace('hidden', 'flex');
+        document.getElementById('logsBtn').classList.replace('hidden', 'flex');
+      } else if (currentUser.role === 'supervisor') {
+        document.getElementById('reportsDropdown').classList.replace('hidden', 'block');
+        document.getElementById('addUnitBtn').classList.replace('hidden', 'flex');
+      }
+
+      await fetchHoldDuration();
+      loadUnits();
+      initWS();
+      setInterval(updateCountdowns, 1000);
+    }
+
+    function logout() {
+      clearTimeout(inactivityTimer);
+      currentUser = null;
+      localStorage.removeItem('user_session');
+      localStorage.removeItem('last_active_time');
+      document.getElementById('loginScreen').classList.replace('hidden', 'flex');
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPass').value = '';
+    }
+
+    async function fetchHoldDuration() {
+      try {
+        const res = await fetch('/settings/hold-duration');
+        const data = await res.json();
+        currentSystemHoldHours = data.hold_hours;
+        document.getElementById('headerHoldHoursBadge').innerText = currentSystemHoldHours + ' ساعة';
+        const sel = document.getElementById('settingHoldHours');
+        if (sel) sel.value = String(currentSystemHoldHours);
+      } catch (e) {}
+    }
+
+    async function saveHoldDurationSetting() {
+      const val = parseInt(document.getElementById('settingHoldHours').value);
+      const res = await fetch('/settings/hold-duration', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ manager_user_id: currentUser.id, hold_hours: val })
+      });
+      if (res.ok) {
+        alert(`تم تحديث مهلة الحجز الافتراضية بنجاح إلى ${val} ساعة لجميع الموظفين`);
+        fetchHoldDuration();
+      } else {
+        alert('تعذر تحديث الإعداد');
+      }
+    }
+
+    async function loadUnits() {
+      try {
+        const res = await fetch(`/units?user_id=${currentUser.id}`);
+        allUnits = await res.json();
+        applyFilters();
+      } catch (e) {}
+    }
+
+    function setCategoryFilter(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.replace('bg-slate-900', 'bg-slate-100');
+        btn.classList.replace('text-white', 'text-slate-700');
+      });
+      event.target.classList.replace('bg-slate-100', 'bg-slate-900');
+      event.target.classList.replace('text-slate-700', 'text-white');
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const minA = parseFloat(document.getElementById('minArea').value) || 0;
+      const maxA = parseFloat(document.getElementById('maxArea').value) || Infinity;
+
+      const filtered = allUnits.filter(u => {
+        const catMatch = activeCategory === 'all' || u.category === activeCategory;
+        const bMatch = (u.building || '').toLowerCase().includes(q);
+        const codeMatch = (u.unit_code || '').toLowerCase().includes(q);
+        const flrMatch = String(u.floor).includes(q);
+        const queryMatch = !q || bMatch || codeMatch || flrMatch;
+        const area = u.area_sqm || 0;
+        const areaMatch = area >= minA && area <= maxA;
+        return catMatch && queryMatch && areaMatch;
+      });
+
+      renderBuildings(filtered);
+      updateCounters(allUnits);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('minArea').value = '';
+      document.getElementById('maxArea').value = '';
+      activeCategory = 'all';
+      applyFilters();
+    }
+
+    function updateCounters(units) {
+      document.getElementById('kpiTotal').innerText = units.length;
+      document.getElementById('kpiAvailable').innerText = units.filter(u => u.status === 'available').length;
+      document.getElementById('kpiHold').innerText = units.filter(u => u.status === 'hold').length;
+      document.getElementById('kpiSold').innerText = units.filter(u => u.status === 'sold').length;
+    }
+
+    function renderBuildings(units) {
+      const container = document.getElementById('buildingsWrapper');
+      container.innerHTML = '';
+
+      if (units.length === 0) {
+        container.innerHTML = '<div class="bg-white p-8 text-center text-xs text-slate-400 rounded-2xl border">لا توجد وحدات مطابقة للبحث أو معروضة حالياً</div>';
+        return;
+      }
+
+      const groups = {};
+      units.forEach(u => {
+        const b = u.building || '1';
+        if (!groups[b]) groups[b] = [];
+        groups[b].push(u);
+      });
+
+      Object.keys(groups).forEach(bName => {
+        const bUnits = groups[bName];
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl border shadow-xs overflow-hidden';
+
+        const header = `
+          <div class="bg-slate-50 px-4 py-3 border-b flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="building" class="w-4 h-4 text-slate-700"></i>
+              <h2 class="font-bold text-sm text-slate-900">برج / عمارة (${bName})</h2>
+              <span class="text-xs text-slate-400">(${bUnits.length} وحدة)</span>
+            </div>
+            <div class="text-xs text-slate-500 font-medium">
+              <span class="text-emerald-600 font-bold">${bUnits.filter(u => u.status === 'available').length} متاح</span> • 
+              <span class="text-amber-600 font-bold">${bUnits.filter(u => u.status === 'hold').length} محجوز</span> • 
+              <span class="text-slate-400 font-bold">${bUnits.filter(u => u.status === 'sold').length} مُباع</span>
+            </div>
+          </div>
+        `;
+
+        const grid = document.createElement('div');
+        grid.className = 'p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3';
+        bUnits.sort((a, b) => b.floor - a.floor || a.unit_number - b.unit_number);
+
+        bUnits.forEach(unit => {
+          let badge = '';
+          let bgClass = '';
+          let actionButtons = '';
+          let timerBadge = '';
+          let blockedTag = '';
+
+          if (unit.is_blocked) {
+            blockedTag = `<span class="bg-rose-100 text-rose-800 text-[9px] px-1.5 py-0.5 rounded font-bold mr-1">محجوبة</span>`;
+          }
+
+          if (unit.status === 'available') {
+            bgClass = 'bg-emerald-50/40 border-emerald-200';
+            badge = '<span class="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded">متاح</span>';
+            actionButtons = `
+              <button onclick="executeHold(${unit.id}, '${unit.unit_code}')" class="w-full mt-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl font-medium flex items-center justify-center gap-1 shadow-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i> حجز مؤقت (${currentSystemHoldHours} ساعة)
+              </button>
+            `;
+          } else if (unit.status === 'hold') {
+            bgClass = 'bg-amber-50/40 border-amber-200';
+            badge = `<span class="text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded truncate max-w-[120px]">معلق: ${unit.locked_by || ''}</span>`;
+            if (unit.hold_expires_at) {
+              timerBadge = `
+                <div class="flex items-center gap-1 text-[10px] text-amber-800 bg-amber-100/70 px-2 py-1 rounded-lg mt-2 font-mono">
+                  <i data-lucide="timer" class="w-3 h-3 text-amber-600"></i>
+                  <span data-timer-expire="${unit.hold_expires_at}">${formatTimeRemaining(unit.hold_expires_at)}</span>
+                </div>
+              `;
+            }
+
+            if (currentUser.role === 'manager') {
+              actionButtons = `
+                <div class="grid grid-cols-3 gap-1 mt-2">
+                  <button onclick="releaseUnit(${unit.id}, '${unit.unit_code}')" class="py-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-[10px] rounded-lg font-medium">إلغاء</button>
+                  <button onclick="openExtendModal(${unit.id})" class="py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] rounded-lg font-medium">تمديد</button>
+                  <button onclick="openSoldModal(${unit.id}, '${unit.unit_code}', ${unit.price})" class="py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] rounded-lg font-medium">بيع نهائي</button>
+                </div>
+              `;
+            } else if (currentUser.role === 'supervisor') {
+              actionButtons = `
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                  <button onclick="releaseUnit(${unit.id}, '${unit.unit_code}')" class="py-1.5 bg-slate-100 hover:bg-rose-100 text-[10px] rounded-lg font-medium">إلغاء الحجز</button>
+                  <button onclick="openExtendModal(${unit.id})" class="py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] rounded-lg font-medium">تمديد</button>
+                </div>
+              `;
+            } else {
+              actionButtons = `<div class="mt-2 text-[10px] text-amber-700 font-semibold text-center bg-amber-100/60 py-1.5 rounded-lg">محجوز لزميلك (مغلق)</div>`;
+            }
+          } else {
+            bgClass = 'bg-slate-50 border-slate-200 opacity-80';
+            const priceSoldTxt = unit.final_price ? `${Number(unit.final_price).toLocaleString()} ج.م` : `${Number(unit.price).toLocaleString()} ج.م`;
+            badge = '<span class="text-[10px] text-slate-500 bg-slate-200 px-2 py-0.5 rounded font-bold">مُباع</span>';
+            actionButtons = `<div class="mt-2 text-[10px] text-slate-400 text-center py-1.5 font-medium">تم البيع (${priceSoldTxt})</div>`;
+          }
+
+          const catBadgeColor = unit.category === 'سكني' ? 'bg-sky-100 text-sky-800' : (unit.category === 'تجاري' ? 'bg-amber-100 text-amber-800' : (unit.category === 'إداري' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'));
+
+          grid.innerHTML += `
+            <div class="border ${bgClass} rounded-2xl p-3.5 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between border-b pb-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-sm font-mono text-slate-900">${unit.unit_code}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${catBadgeColor}">${unit.category || 'سكني'}</span>
+                    ${blockedTag}
+                  </div>
+                  ${badge}
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600 mt-2">
+                  <div><span class="text-slate-400 text-[10px] block">الدور / الشقة</span><span class="font-bold">دور ${unit.floor} (شقة ${unit.unit_number})</span></div>
+                  <div><span class="text-slate-400 text-[10px] block">المساحة</span><span class="font-bold font-mono">${unit.area_sqm || '-'} م²</span></div>
+                  <div><span class="text-slate-400 text-[10px] block">سعر المتر</span><span class="font-medium font-mono">${unit.meter_price ? Number(unit.meter_price).toLocaleString() + ' ج' : '-'}</span></div>
+                  <div><span class="text-slate-400 text-[10px] block">إجمالي السعر</span><span class="font-bold text-slate-900 font-mono">${Number(unit.price).toLocaleString()} ج</span></div>
+                </div>
+                ${timerBadge}
+              </div>
+              <div>${actionButtons}</div>
+            </div>
+          `;
+        });
+
+        card.innerHTML = header;
+        card.appendChild(grid);
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function openSoldModal(id, code, price) {
+      selectedUnitForSold = { id, code, price };
+      document.getElementById('soldModalCode').innerText = code;
+      document.getElementById('soldBasePrice').innerText = Number(price).toLocaleString() + ' ج.م';
+      document.getElementById('discountInput').value = 0;
+      calcFinalPrice();
+      document.getElementById('soldDiscountModal').classList.replace('hidden', 'flex');
+    }
+    function closeSoldModal() { document.getElementById('soldDiscountModal').classList.replace('flex', 'hidden'); }
+    function calcFinalPrice() {
+      const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+      const finalP = Math.max(0, selectedUnitForSold.price - disc);
+      document.getElementById('soldFinalPrice').innerText = Number(finalP).toLocaleString() + ' ج.م';
+    }
+    async function confirmSoldWithDiscount() {
+      const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+      const res = await fetch('/units/mark-sold', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ unit_id: selectedUnitForSold.id, user_id: currentUser.id, discount_amount: disc })
+      });
+      closeSoldModal();
+      if (!res.ok) alert('حدث خطأ أثناء اعتماد البيع');
+    }
+
+    function openBlockModal() { document.getElementById('blockModal').classList.replace('hidden', 'flex'); }
+    function closeBlockModal() { document.getElementById('blockModal').classList.replace('flex', 'hidden'); }
+    function toggleBlockScopeInputs() {
+      const scope = document.getElementById('blockScope').value;
+      const flrWrapper = document.getElementById('blockFloorWrapper');
+      if (scope === 'floor') flrWrapper.classList.remove('hidden');
+      else flrWrapper.classList.add('hidden');
+    }
+    async function executeBlockVisibility() {
+      const scope = document.getElementById('blockScope').value;
+      const bName = document.getElementById('blockBuilding').value.trim();
+      const flr = parseInt(document.getElementById('blockFloor').value);
+      const action = document.getElementById('blockAction').value;
+
+      if (!bName) return alert('يرجى تحديد رقم أو اسم البرج');
+
+      const isBlocked = action !== 'unblock';
+      const hiddenFrom = action === 'hide_all' ? 'sales_and_supervisor' : 'sales';
+
+      const res = await fetch('/units/block-visibility', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          manager_user_id: currentUser.id,
+          scope: scope,
+          target_building: bName,
+          target_floor: scope === 'floor' ? flr : null,
+          is_blocked: isBlocked,
+          hidden_from: hiddenFrom
+        })
+      });
+      closeBlockModal();
+      if (!res.ok) alert('حدث خطأ في تنفيذ الحجب');
+    }
+
+    function openImportModal() { document.getElementById('importModal').classList.replace('hidden', 'flex'); }
+    function closeImportModal() { document.getElementById('importModal').classList.replace('flex', 'hidden'); }
+    async function uploadExcelFile() {
+      const fileInput = document.getElementById('excelFileInput');
+      if (!fileInput.files.length) return alert('يرجى اختيار ملف إكسيل (.xlsx)');
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const res = await fetch(`/units/import-excel?manager_user_id=${currentUser.id}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      closeImportModal();
+      if (res.ok) alert(`تم بنجاح استيراد ${data.imported} وحدة عقارية (تخطي ${data.skipped})`);
+      else alert(data.detail || 'حدث خطأ في قراءة ملف الإكسيل');
+    }
+
+    // تنزيل تقارير إكسيل في الخلفية دون الانتقال من الصفحة
+    async function downloadReport(type) {
+      try {
+        const url = `/reports/export-excel?report_type=${type}&user_id=${currentUser.id}`;
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `report_${type}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        alert('حدث خطأ أثناء تحميل التقرير');
+      }
+    }
+
+    async function executeHold(id, code) {
+      if (!confirm(`تأكيد حجز الوحدة (${code}) لمدة ${currentSystemHoldHours} ساعة؟`)) return;
+      const res = await fetch('/units/hold', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ unit_id: id, user_id: currentUser.id })
+      });
+      if (!res.ok) alert('تعذر حجز الوحدة');
+    }
+
+    async function releaseUnit(id, code) {
+      if (!confirm(`تأكيد إلغاء حجز الوحدة (${code})؟`)) return;
+      await fetch('/units/release', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ unit_id: id, user_id: currentUser.id })
+      });
+    }
+
+    function openExtendModal(id) { selectedUnitIdForExtend = id; document.getElementById('extendModal').classList.replace('hidden', 'flex'); }
+    function closeExtendModal() { document.getElementById('extendModal').classList.replace('flex', 'hidden'); selectedUnitIdForExtend = null; }
+    async function confirmExtendAction() {
+      const h = parseInt(document.getElementById('extendHoursSelect').value);
+      await fetch('/units/extend-hold', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ unit_id: selectedUnitIdForExtend, user_id: currentUser.id, additional_hours: h })
+      });
+      closeExtendModal();
+    }
+
+    function openAddUnitModal() { document.getElementById('addUnitModal').classList.replace('hidden', 'flex'); }
+    function closeAddUnitModal() { document.getElementById('addUnitModal').classList.replace('flex', 'hidden'); }
+    async function saveManualUnit() {
+      const b = document.getElementById('manualBuilding').value.trim() || '1';
+      const cat = document.getElementById('manualCategory').value;
+      const flr = parseInt(document.getElementById('manualFloor').value) || 1;
+      const uNum = parseInt(document.getElementById('manualUnitNum').value) || 1;
+      const area = parseFloat(document.getElementById('manualArea').value);
+      const mPrice = parseFloat(document.getElementById('manualMeterPrice').value);
+
+      if (isNaN(area) || isNaN(mPrice)) return alert('يرجى كتابة المساحة وسعر المتر بشكل صحيح');
+
+      const res = await fetch('/units/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: currentUser.id, building: b, category: cat, floor: flr, unit_number: uNum, area_sqm: area, meter_price: mPrice })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`تمت إضافة الوحدة بكود ذكي: ${data.unit_code}`);
+        closeAddUnitModal();
+      } else alert(data.detail || 'حدث خطأ');
+    }
+
+    function openUsersModal() { document.getElementById('usersModal').classList.replace('hidden', 'flex'); fetchUsers(); }
+    function closeUsersModal() { document.getElementById('usersModal').classList.replace('flex', 'hidden'); }
+    async function fetchUsers() {
+      const tbody = document.getElementById('usersTableBody');
+      const res = await fetch(`/users/list?user_id=${currentUser.id}`);
+      const list = await res.json();
+      tbody.innerHTML = list.map(u => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 font-bold">${u.full_name}</td>
+          <td class="p-2.5 font-mono text-slate-500">${u.username}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'manager' ? 'bg-indigo-100 text-indigo-700': (u.role === 'supervisor' ? 'bg-amber-100 text-amber-700': 'bg-slate-100 text-slate-700')}">${u.role}</span></td>
+          <td class="p-2.5 text-center">${u.id !== currentUser.id ? `<button onclick="deleteUser(${u.id})" class="text-rose-600 font-bold hover:underline">حذف</button>`: '<span class="text-slate-300">أنت</span>'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function addUserSubmit() {
+      const full = document.getElementById('newUserFull').value.trim();
+      const user = document.getElementById('newUserName').value.trim();
+      const pass = document.getElementById('newUserPass').value.trim();
+      const role = document.getElementById('newUserRole').value;
+
+      if (!full || !user || !pass) return alert('يرجى ملء جميع حقول الموظف');
+
+      const res = await fetch('/users/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ manager_user_id: currentUser.id, username: user, password: pass, full_name: full, role: role })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        document.getElementById('newUserFull').value = '';
+        document.getElementById('newUserName').value = '';
+        document.getElementById('newUserPass').value = '';
+        fetchUsers();
+      } else {
+        alert(data.detail || 'تعذر إضافة الموظف');
+      }
+    }
+
+    async function deleteUser(id) {
+      if (confirm('تأكيد حذف حساب الموظف؟')) {
+        await fetch(`/users/${id}?manager_id=${currentUser.id}`, {method: 'DELETE'});
+        fetchUsers();
+      }
+    }
+
+    function openLogsModal() { document.getElementById('logsModal').classList.replace('hidden', 'flex'); fetchLogs(); }
+    function closeLogsModal() { document.getElementById('logsModal').classList.replace('flex', 'hidden'); }
+    async function fetchLogs() {
+      const tbody = document.getElementById('logsTableBody');
+      const res = await fetch(`/admin/logs?user_id=${currentUser.id}`);
+      const logs = await res.json();
+      tbody.innerHTML = logs.map(l => `
+        <tr><td class="p-2 text-slate-400">${l.time.substring(5)}</td><td class="p-2 font-bold">${l.user}</td><td class="p-2">${l.action}</td><td class="p-2 text-indigo-600 font-bold">${l.unit}</td><td class="p-2">${l.details}</td></tr>
+      `).join('');
+    }
+
+    function formatTimeRemaining(isoDate) {
+      if (!isoDate) return '';
+      const diff = new Date(isoDate).getTime() - new Date().getTime();
+      if (diff <= 0) return '<span class="text-rose-600 font-bold">انتهت المهلة</span>';
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const days = Math.floor(hours / 24);
+      const remHours = hours % 24;
+      if (days > 0) return `متبقي ${days}ي و ${remHours}س`;
+      return `متبقي ${hours}س و ${mins}د`;
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll('[data-timer-expire]').forEach(el => {
+        el.innerHTML = formatTimeRemaining(el.getAttribute('data-timer-expire'));
+      });
+    }
+
+    function initWS() {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${window.location.host}/ws`);
+      ws.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.event === 'reload_needed') loadUnits();
+      };
+      ws.onclose = () => setTimeout(initWS, 3000);
+    }
+
+    checkAuth();
+  </script>
+</body>
+</html>
