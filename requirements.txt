@@ -1,7 +1,7 @@
 fastapi>=0.115.0
+pydantic>=2.9.0
 uvicorn
 sqlalchemy
 openpyxl
 python-multipart
 websockets
-pydantic>=2.9.0
